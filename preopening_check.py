@@ -28,19 +28,25 @@ import urllib.error
 from datetime import datetime
 
 # ---- تنظیمات ----
-API_KEY = "B5zgBWpp87rDlVHmL6Rx963abdhRaNhT"
+API_KEY = "Bujirlnr79wxmwRbPUupj2WH22v6fi9M"
 BASE_URL = "https://Api.BrsApi.ir/Tsetmc/AllSymbols.php"
 TYPE = 1
 
-MAX_RETRIES = 5
+MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 3
 TIMEOUT_SECONDS = 30
+
+# فاصله زمانی بین هر بار اجرای مجدد بررسی (به ثانیه) - همینجا دستی تنظیم کن
+LOOP_INTERVAL_SECONDS = 10
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 YESTERDAY_FILE = os.path.join(SCRIPT_DIR, "symbols_data.json")  # دیتای ذخیره‌شده‌ی دیروز
 
 # ارقامی که نماد نباید به آن‌ها ختم شود (هم انگلیسی هم فارسی)
 EXCLUDED_LAST_DIGITS = {"2", "3", "۲", "۳"}
+
+# نام گروه صنعتی که باید کاملاً حذف بشه (فیلد cs در دیتای API)
+EXCLUDED_INDUSTRY_GROUPS = {"صندوق سرمایه‌گذاری قابل معامله", "صندوق سرمایه گذاری قابل معامله"}
 
 
 # ---------------------------------------------------------------------
@@ -113,43 +119,46 @@ def is_excluded_symbol(symbol_name):
     return symbol_name.strip()[-1] in EXCLUDED_LAST_DIGITS
 
 
+def is_excluded_industry_group(industry_group):
+    """نمادهایی که گروه صنعتشون صندوق سرمایه‌گذاری قابل معامله (ETF) هست حذف میشن"""
+    if not industry_group:
+        return False
+    return industry_group.strip() in EXCLUDED_INDUSTRY_GROUPS
+
+
 # ---------------------------------------------------------------------
-# منطق اصلی
+# یک بار اجرای کامل بررسی (دریافت دیتای زنده + مقایسه + پرینت نتایج)
 # ---------------------------------------------------------------------
-def main():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] شروع بررسی پیش‌گشایش...\n")
+def run_check(yesterday_map):
+    print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] اجرای بررسی جدید...\n")
 
-    # ۱. خواندن دیتای دیروز از فایل
-    yesterday_data = load_yesterday_data(YESTERDAY_FILE)
-    if not isinstance(yesterday_data, list):
-        print("ساختار فایل دیروز درست نیست.", file=sys.stderr)
-        sys.exit(1)
-
-    # ساخت دیکشنری برای دسترسی سریع به دیتای دیروز بر اساس نماد (l18)
-    yesterday_map = {item.get("l18"): item for item in yesterday_data if item.get("l18")}
-
-    # ۲. دریافت دیتای زنده‌ی امروز
+    # دریافت دیتای زنده‌ی امروز
     try:
         today_data = fetch_today_live_data()
     except Exception as e:
         print(f"خطا در دریافت دیتای زنده امروز: {e}", file=sys.stderr)
-        sys.exit(1)
+        return
 
     if not isinstance(today_data, list):
         print("ساختار دیتای امروز درست نیست.", file=sys.stderr)
-        sys.exit(1)
+        return
 
     total_checked = 0
     excluded_count = 0
+    excluded_etf_count = 0
     matched = []
 
-    # ۳. پیمایش روی دیتای امروز و مقایسه با دیروز
     for today_item in today_data:
         symbol = today_item.get("l18", "")
 
         # حذف نمادهایی که آخرشون 2 یا 3 هست
         if is_excluded_symbol(symbol):
             excluded_count += 1
+            continue
+
+        # حذف نمادهایی که گروه صنعتشون صندوق سرمایه‌گذاری قابل معامله (ETF) هست
+        if is_excluded_industry_group(today_item.get("cs")):
+            excluded_etf_count += 1
             continue
 
         yesterday_item = yesterday_map.get(symbol)
@@ -183,7 +192,7 @@ def main():
                 "po1_today": po1_today,
             })
 
-    # ۴. چاپ نتایج
+    # چاپ نتایج
     print("سهم‌های واجد شرط خرید در پیش‌گشایش:\n")
     for m in matched:
         print(
@@ -194,9 +203,35 @@ def main():
         )
 
     print("\n----------------------------------------")
-    print(f"تعداد کل سهم‌های بررسی‌شده (بعد از حذف نمادهای 2/3): {total_checked}")
+    print(f"تعداد کل سهم‌های بررسی‌شده (بعد از حذف نمادهای 2/3 و ETF): {total_checked}")
     print(f"تعداد نمادهای حذف‌شده (آخرشون 2 یا 3): {excluded_count}")
+    print(f"تعداد نمادهای حذف‌شده (گروه صندوق ETF): {excluded_etf_count}")
     print(f"تعداد سهم‌هایی که هر دو شرط رو داشتن: {len(matched)}")
+
+
+# ---------------------------------------------------------------------
+# منطق اصلی: دیتای دیروز فقط یک بار خونده میشه، بعد لوپ بی‌نهایت
+# هر LOOP_INTERVAL_SECONDS ثانیه دوباره دیتای زنده رو می‌گیره و بررسی می‌کنه
+# ---------------------------------------------------------------------
+def main():
+    # دیتای دیروز فقط یک بار لازمه خونده بشه (تغییر نمی‌کنه)
+    yesterday_data = load_yesterday_data(YESTERDAY_FILE)
+    if not isinstance(yesterday_data, list):
+        print("ساختار فایل دیروز درست نیست.", file=sys.stderr)
+        sys.exit(1)
+
+    yesterday_map = {item.get("l18"): item for item in yesterday_data if item.get("l18")}
+
+    print(f"شروع مانیتورینگ - هر {LOOP_INTERVAL_SECONDS} ثانیه یک‌بار بررسی می‌شه.")
+    print("برای توقف، Ctrl+C رو بزن.\n")
+
+    try:
+        while True:
+            run_check(yesterday_map)
+            print(f"\n--- {LOOP_INTERVAL_SECONDS} ثانیه صبر می‌کنیم تا بررسی بعدی ---")
+            time.sleep(LOOP_INTERVAL_SECONDS)
+    except KeyboardInterrupt:
+        print("\nمانیتورینگ متوقف شد.")
 
 
 if __name__ == "__main__":

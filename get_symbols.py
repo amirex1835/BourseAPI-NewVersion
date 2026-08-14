@@ -16,7 +16,7 @@ import urllib.error
 from datetime import datetime
 
 # ---- تنظیمات ----
-API_KEY = "B5zgBWpp87rDlVHmL6Rx963abdhRaNhT"
+API_KEY = "Bujirlnr79wxmwRbPUupj2WH22v6fi9M"
 BASE_URL = "https://Api.BrsApi.ir/Tsetmc/AllSymbols.php"
 
 # نوع اوراق طبق جدول راهنما:
