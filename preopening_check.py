@@ -28,16 +28,16 @@ import urllib.error
 from datetime import datetime
 
 # ---- تنظیمات ----
-API_KEY = "Bujirlnr79wxmwRbPUupj2WH22v6fi9M"
+API_KEY = "B5zgBWpp87rDlVHmL6Rx963abdhRaNhT"
 BASE_URL = "https://Api.BrsApi.ir/Tsetmc/AllSymbols.php"
 TYPE = 1
 
-MAX_RETRIES = 3
+MAX_RETRIES = 5
 RETRY_DELAY_SECONDS = 3
 TIMEOUT_SECONDS = 30
 
 # فاصله زمانی بین هر بار اجرای مجدد بررسی (به ثانیه) - همینجا دستی تنظیم کن
-LOOP_INTERVAL_SECONDS = 10
+LOOP_INTERVAL_SECONDS = 20
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 YESTERDAY_FILE = os.path.join(SCRIPT_DIR, "symbols_data.json")  # دیتای ذخیره‌شده‌ی دیروز
@@ -47,6 +47,9 @@ EXCLUDED_LAST_DIGITS = {"2", "3", "۲", "۳"}
 
 # نام گروه صنعتی که باید کاملاً حذف بشه (فیلد cs در دیتای API)
 EXCLUDED_INDUSTRY_GROUPS = {"صندوق سرمایه‌گذاری قابل معامله", "صندوق سرمایه گذاری قابل معامله"}
+
+# حداقل درصد فاصله‌ی مجاز بین آخرین قیمت معامله و قیمت پایانی دیروز (0.3%)
+MIN_PRICE_GAP_PERCENT = 0.003
 
 
 # ---------------------------------------------------------------------
@@ -169,17 +172,28 @@ def run_check(yesterday_map):
 
         pc_yesterday = to_number(yesterday_item.get("pc"))   # قیمت پایانی دیروز
         pl_yesterday = to_number(yesterday_item.get("pl"))   # آخرین قیمت معامله دیروز
+        plc_yesterday = to_number(yesterday_item.get("plc")) # تغییر مقداری آخرین قیمت دیروز (pl - py)
+        pcc_yesterday = to_number(yesterday_item.get("pcc")) # تغییر مقداری قیمت پایانی دیروز (pc - py)
         po1_today = to_number(today_item.get("po1"))         # قیمت سفارش فروش سطر اول امروز
 
         # po1 برابر با صفر یعنی در حال حاضر سفارش فروشی روی نماد ثبت نشده
         # (مثلاً خارج از بازه پیش‌گشایش هستیم یا صف فروش خالیه) - این حالت
         # دیتای معتبر برای مقایسه نیست و باید ردش کنیم، وگرنه چون 0 از هر
         # عددی کمتره، شرط دوم به‌اشتباه همیشه True میشه.
-        if pc_yesterday is None or pl_yesterday is None or po1_today is None or po1_today <= 0:
+        if (pc_yesterday is None or pl_yesterday is None or plc_yesterday is None
+                or pcc_yesterday is None or po1_today is None
+                or po1_today <= 0 or pc_yesterday <= 0):
             continue  # دیتای ناقص یا سفارش فروش ثبت‌نشده
 
-        # شرط اول: پایانی دیروز کمتر از آخرین معامله دیروز
-        condition_1 = pc_yesterday < pl_yesterday
+        # شرط اول: پایانی دیروز باید کمتر از آخرین معامله دیروز باشه، ضمن
+        # اینکه فاصله‌شون هم باید حداقل MIN_PRICE_GAP_PERCENT (0.3%) باشه.
+        # به‌جای محاسبه‌ی دستی (pl - pc)، از فیلدهای آماده‌ی خود API استفاده
+        # می‌کنیم: چون plc = pl - py و pcc = pc - py، تفریق‌شون (plc - pcc)
+        # دقیقاً برابر pl - pc هست (py حذف میشه) و همون عدد دقیق رو میده،
+        # بدون نیاز به محاسبه‌ی جدا از pl و pc.
+        price_gap = plc_yesterday - pcc_yesterday  # دقیقاً برابر pl_yesterday - pc_yesterday
+        price_gap_percent = price_gap / pc_yesterday
+        condition_1 = price_gap > 0 and price_gap_percent >= MIN_PRICE_GAP_PERCENT
         # شرط دوم: قیمت سفارش فروش سطر اول امروز کمتر از قیمت پایانی دیروز
         condition_2 = po1_today < pc_yesterday
 
