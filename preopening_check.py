@@ -37,13 +37,13 @@ RETRY_DELAY_SECONDS = 3
 TIMEOUT_SECONDS = 30
 
 # فاصله زمانی بین هر بار اجرای مجدد بررسی (به ثانیه) - همینجا دستی تنظیم کن
-LOOP_INTERVAL_SECONDS = 20
+LOOP_INTERVAL_SECONDS = 10
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 YESTERDAY_FILE = os.path.join(SCRIPT_DIR, "symbols_data.json")  # دیتای ذخیره‌شده‌ی دیروز
 
 # ارقامی که نماد نباید به آن‌ها ختم شود (هم انگلیسی هم فارسی)
-EXCLUDED_LAST_DIGITS = {"2", "3", "۲", "۳"}
+EXCLUDED_LAST_DIGITS = {"2", "3"}
 
 # نام گروه صنعتی که باید کاملاً حذف بشه (فیلد cs در دیتای API)
 EXCLUDED_INDUSTRY_GROUPS = {"صندوق سرمایه‌گذاری قابل معامله", "صندوق سرمایه گذاری قابل معامله"}
