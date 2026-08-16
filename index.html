@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پیش‌گشایش | پنل مانیتورینگ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ---------------------------------------------------------------
+   Design tokens
+   ------------------------------------------------------------- */
+:root {
+  --bg-base:      #0B1210;
+  --bg-raise:     #101815;
+  --surface:      #141D19;
+  --surface-2:    #1B2622;
+  --border:       #253530;
+  --border-soft:  #1D2A25;
+
+  --text-primary: #ECEFEC;
+  --text-muted:   #8FA097;
+  --text-faint:   #5B6B63;
+
+  --accent:       #C99A4A;
+  --accent-soft:  rgba(201, 154, 74, 0.14);
+  --accent-line:  rgba(201, 154, 74, 0.35);
+
+  --positive:     #3FBF7F;
+  --negative:     #E2574C;
+
+  --font-display: 'Vazirmatn', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  min-height: 100vh;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(201,154,74,0.06), transparent),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(63,191,127,0.04), transparent);
+  background-attachment: fixed;
+}
+
+::selection { background: var(--accent-soft); color: var(--accent); }
+
+.scanline {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.012) 0px,
+    rgba(255,255,255,0.012) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.5;
+}
+
+/* Topbar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border-soft);
+  background: linear-gradient(180deg, var(--bg-raise), var(--bg-base));
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(6px);
+}
+
+.brand { display: flex; align-items: center; gap: 14px; }
+
+.brand-mark {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.brand-text h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
+.brand-sub { display: block; margin-top: 2px; font-size: 12.5px; color: var(--text-muted); }
+
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+
+.clock-block { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.clock { font-family: var(--font-mono); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.clock-label { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+.status-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: 13px; color: var(--text-muted);
+}
+
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); transition: background 0.3s ease; }
+.status-pill.ok .status-dot { background: var(--positive); animation: pulse 2s infinite; }
+.status-pill.error .status-dot { background: var(--negative); }
+.status-pill.ok #statusText { color: var(--text-primary); }
+
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(63,191,127,0.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(63,191,127,0); }
+  100% { box-shadow: 0 0 0 0 rgba(63,191,127,0); }
+}
+
+/* Layout */
+.wrap { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; }
+
+/* Stat cards */
+.stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
+
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.stat-label { font-size: 12px; color: var(--text-muted); }
+.stat-value { font-family: var(--font-mono); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-value.accent { color: var(--accent); }
+.stat-value.muted { color: var(--text-muted); font-size: 22px; }
+
+.countdown-card { position: relative; }
+.countdown-wrap { display: flex; align-items: center; gap: 10px; }
+.countdown-ring { width: 30px; height: 30px; transform: rotate(-90deg); flex-shrink: 0; }
+.ring-bg { fill: none; stroke: var(--border); stroke-width: 4; }
+.ring-fg {
+  fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round;
+  stroke-dasharray: 119.4; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear;
+}
+
+/* Table section */
+.table-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+
+.table-header {
+  padding: 20px 22px 16px; border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+}
+
+.table-header h2 { margin: 0; font-size: 16px; font-weight: 700; }
+.table-sub { font-size: 12.5px; color: var(--text-muted); }
+
+.table-scroll { max-height: 62vh; overflow-y: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+
+thead th {
+  position: sticky; top: 0; background: var(--surface-2); color: var(--text-muted);
+  font-weight: 600; font-size: 12px; text-align: right; padding: 11px 14px;
+  border-bottom: 1px solid var(--border); white-space: nowrap; z-index: 5;
+}
+
+th.col-rank { text-align: center; width: 40px; }
+th.col-num, td.col-num { text-align: left; }
+th.col-gap { text-align: left; }
+
+tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+tbody tr { transition: background 0.15s ease; }
+tbody tr:hover { background: var(--surface-2); }
+
+td.col-rank { text-align: center; color: var(--text-faint); font-family: var(--font-mono); font-size: 12px; }
+td.col-symbol { font-weight: 700; color: var(--text-primary); }
+td.col-name { color: var(--text-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+td.col-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: left; color: var(--text-primary); direction: ltr; }
+td.col-gap { font-family: var(--font-mono); direction: ltr; text-align: left; position: relative; }
+
+.gap-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 92px; }
+.gap-bar-track { width: 46px; height: 5px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.gap-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--positive)); border-radius: 4px; }
+.gap-value { font-weight: 700; color: var(--positive); }
+
+/* Empty state */
+.empty-state { padding: 60px 20px; text-align: center; color: var(--text-muted); }
+.empty-icon { display: block; font-size: 28px; color: var(--text-faint); margin-bottom: 10px; }
+.empty-state p { margin: 0; font-size: 13.5px; }
+
+/* Footer */
+.foot-note { margin-top: 20px; text-align: center; font-size: 11.5px; color: var(--text-faint); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .topbar { padding: 14px 18px; flex-wrap: wrap; gap: 12px; }
+  .wrap { padding: 20px 16px 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-pill.ok .status-dot { animation: none; }
+  .ring-fg { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="scanline"></div>
+
+<header class="topbar">
+  <div class="topbar-right">
+    <div class="brand">
+      <span class="brand-mark">پ</span>
+      <div class="brand-text">
+        <h1>پیش‌گشایش</h1>
+        <span class="brand-sub">رصد لحظه‌ای صف‌های فروش پیش از گشایش بازار</span>
+      </div>
+    </div>
+  </div>
+  <div class="topbar-left">
+    <div class="clock-block">
+      <span id="clock" class="clock">--:--:--</span>
+      <span class="clock-label">اکنون</span>
+    </div>
+    <div class="status-pill" id="statusPill">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">در حال اتصال…</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <span class="stat-label">نمادهای بررسی‌شده</span>
+      <span class="stat-value" id="statChecked">—</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">واجد هر دو شرط</span>
+      <span class="stat-value accent" id="statMatched">—</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">حذف‌شده (نماد ۲/۳)</span>
+      <span class="stat-value muted" id="statDigit">—</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">حذف‌شده (صندوق ETF)</span>
+      <span class="stat-value muted" id="statEtf">—</span>
+    </div>
+    <div class="stat-card countdown-card">
+      <span class="stat-label">به‌روزرسانی بعدی</span>
+      <div class="countdown-wrap">
+        <svg class="countdown-ring" viewBox="0 0 44 44">
+          <circle class="ring-bg" cx="22" cy="22" r="19"></circle>
+          <circle class="ring-fg" id="ringFg" cx="22" cy="22" r="19"></circle>
+        </svg>
+        <span class="stat-value" id="statCountdown">۲۰</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="table-section">
+    <div class="table-header">
+      <h2>نمادهای واجد شرایط</h2>
+      <span class="table-sub">مرتب‌شده بر اساس بیشترین فاصله‌ی درصدی پایانی تا آخرین معامله</span>
+    </div>
+
+    <div class="table-scroll">
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th class="col-rank">#</th>
+            <th class="col-symbol">نماد</th>
+            <th class="col-name">نام شرکت</th>
+            <th class="col-num">پایانی دیروز</th>
+            <th class="col-num">آخرین معامله دیروز</th>
+            <th class="col-num">فاصله (تومان)</th>
+            <th class="col-gap">فاصله درصدی</th>
+            <th class="col-num">po1 امروز</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="empty-state" id="emptyState" hidden>
+      <span class="empty-icon">◌</span>
+      <p id="emptyMessage">هنوز نمادی که هر دو شرط رو داشته باشه پیدا نشده.</p>
+    </div>
+  </section>
+
+  <footer class="foot-note">
+    <span>داده‌ها از BrsApi / TSETMC — این پنل صرفاً برای رصد شخصیه و توصیه‌ی خرید و فروش نیست.</span>
+  </footer>
+
+</main>
+
+<script>
+// این اسکریپت فقط دیتایی که app.py از /api/latest برمی‌گردونه رو
+// می‌گیره و نمایش می‌ده. هیچ محاسبه یا فیلتری اینجا انجام نمیشه - همه‌ی
+// منطق (شرط‌ها، فرمول درصد، مرتب‌سازی) سمت بک‌اند و عیناً طبق اسکریپت
+// preopening_check.py انجام شده.
+
+const RING_CIRCUMFERENCE = 119.4; // 2 * PI * r(19)
+
+let loopIntervalSeconds = 20;
+let lastUpdateTimestamp = null;
+
+const el = {
+  clock: document.getElementById('clock'),
+  statusPill: document.getElementById('statusPill'),
+  statusText: document.getElementById('statusText'),
+  statChecked: document.getElementById('statChecked'),
+  statMatched: document.getElementById('statMatched'),
+  statDigit: document.getElementById('statDigit'),
+  statEtf: document.getElementById('statEtf'),
+  statCountdown: document.getElementById('statCountdown'),
+  ringFg: document.getElementById('ringFg'),
+  resultsBody: document.getElementById('resultsBody'),
+  emptyState: document.getElementById('emptyState'),
+  emptyMessage: document.getElementById('emptyMessage'),
+  table: document.getElementById('resultsTable'),
+};
+
+function formatFa(num, digits = 0) {
+  if (num === null || num === undefined || Number.isNaN(num)) return '—';
+  return num.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function tickClock() {
+  const now = new Date();
+  el.clock.textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+function renderRows(matches) {
+  el.resultsBody.innerHTML = '';
+
+  if (!matches || matches.length === 0) {
+    el.table.style.display = 'none';
+    el.emptyState.hidden = false;
+    return;
+  }
+
+  el.table.style.display = '';
+  el.emptyState.hidden = true;
+
+  const maxGap = Math.max(...matches.map(m => m.price_gap_percent), 0.0001);
+
+  matches.forEach((m, idx) => {
+    const tr = document.createElement('tr');
+    const barPct = Math.min(100, (m.price_gap_percent / maxGap) * 100);
+
+    tr.innerHTML = `
+      <td class="col-rank">${idx + 1}</td>
+      <td class="col-symbol">${escapeHtml(m.symbol)}</td>
+      <td class="col-name">${escapeHtml(m.name)}</td>
+      <td class="col-num">${formatFa(m.pc_yesterday)}</td>
+      <td class="col-num">${formatFa(m.pl_yesterday)}</td>
+      <td class="col-num">${formatFa(m.price_gap)}</td>
+      <td class="col-gap">
+        <span class="gap-cell">
+          <span class="gap-value">${formatFa(m.price_gap_percent, 2)}%</span>
+          <span class="gap-bar-track"><span class="gap-bar-fill" style="width:${barPct}%"></span></span>
+        </span>
+      </td>
+      <td class="col-num">${formatFa(m.po1_today)}</td>
+    `;
+    el.resultsBody.appendChild(tr);
+  });
+}
+
+function setStatus(status, message) {
+  el.statusPill.classList.remove('ok', 'error');
+
+  if (status === 'ok') {
+    el.statusPill.classList.add('ok');
+    el.statusText.textContent = 'متصل — در حال رصد';
+  } else if (status === 'error') {
+    el.statusPill.classList.add('error');
+    el.statusText.textContent = message || 'خطا در دریافت دیتا';
+  } else if (status === 'no_yesterday_file') {
+    el.statusPill.classList.add('error');
+    el.statusText.textContent = 'فایل symbols_data.json پیدا نشد';
+  } else {
+    el.statusText.textContent = 'در حال اتصال…';
+  }
+}
+
+async function fetchLatest() {
+  try {
+    const res = await fetch('/api/latest', { cache: 'no-store' });
+    const data = await res.json();
+
+    setStatus(data.status, data.error_message);
+    loopIntervalSeconds = data.loop_interval_seconds || 20;
+
+    if (data.stats) {
+      el.statChecked.textContent = formatFa(data.stats.total_checked);
+      el.statMatched.textContent = formatFa(data.stats.matched_count);
+      el.statDigit.textContent = formatFa(data.stats.excluded_digit_count);
+      el.statEtf.textContent = formatFa(data.stats.excluded_etf_count);
+    }
+
+    if (data.status === 'no_yesterday_file') {
+      el.emptyMessage.textContent = data.error_message;
+      el.table.style.display = 'none';
+      el.emptyState.hidden = false;
+    } else if (data.matches) {
+      renderRows(data.matches);
+    }
+
+    if (data.last_update) {
+      const newTs = new Date(data.last_update);
+      if (!lastUpdateTimestamp || newTs.getTime() !== lastUpdateTimestamp.getTime()) {
+        lastUpdateTimestamp = newTs;
+      }
+    }
+  } catch (err) {
+    setStatus('error', 'اتصال به سرور محلی برقرار نشد');
+  }
+}
+
+function tickCountdown() {
+  if (!lastUpdateTimestamp) {
+    el.statCountdown.textContent = '—';
+    return;
+  }
+
+  const elapsed = (Date.now() - lastUpdateTimestamp.getTime()) / 1000;
+  let remaining = Math.ceil(loopIntervalSeconds - elapsed);
+  if (remaining < 0) remaining = 0;
+  if (remaining > loopIntervalSeconds) remaining = loopIntervalSeconds;
+
+  el.statCountdown.textContent = formatFa(remaining);
+
+  const fraction = remaining / loopIntervalSeconds;
+  const offset = RING_CIRCUMFERENCE * (1 - fraction);
+  el.ringFg.style.strokeDashoffset = offset.toFixed(1);
+}
+
+setInterval(tickClock, 1000);
+tickClock();
+
+setInterval(tickCountdown, 1000);
+
+fetchLatest();
+setInterval(fetchLatest, 2000);
+</script>
+</body>
+</html>
