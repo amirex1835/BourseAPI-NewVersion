@@ -8,9 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* ---------------------------------------------------------------
-   Design tokens
-   ------------------------------------------------------------- */
 :root {
   --bg-base:      #0B1210;
   --bg-raise:     #101815;
@@ -28,6 +25,7 @@
   --accent-line:  rgba(201, 154, 74, 0.35);
 
   --positive:     #3FBF7F;
+  --positive-soft:rgba(63, 191, 127, 0.12);
   --negative:     #E2574C;
 
   --font-display: 'Vazirmatn', sans-serif;
@@ -41,8 +39,7 @@
 * { box-sizing: border-box; }
 
 html, body {
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   background: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-display);
@@ -59,45 +56,28 @@ body {
 ::selection { background: var(--accent-soft); color: var(--accent); }
 
 .scanline {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 50;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(255,255,255,0.012) 0px,
-    rgba(255,255,255,0.012) 1px,
-    transparent 1px,
-    transparent 3px
-  );
+  position: fixed; inset: 0; pointer-events: none; z-index: 50;
+  background: repeating-linear-gradient(to bottom,
+    rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px,
+    transparent 1px, transparent 3px);
   opacity: 0.5;
 }
 
 /* Topbar */
 .topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 32px;
-  border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px; border-bottom: 1px solid var(--border-soft);
   background: linear-gradient(180deg, var(--bg-raise), var(--bg-base));
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  backdrop-filter: blur(6px);
+  position: sticky; top: 0; z-index: 20; backdrop-filter: blur(6px);
 }
 
 .brand { display: flex; align-items: center; gap: 14px; }
 
 .brand-mark {
-  width: 40px; height: 40px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-line);
-  color: var(--accent);
-  font-weight: 800;
-  font-size: 18px;
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md); background: var(--accent-soft);
+  border: 1px solid var(--accent-line); color: var(--accent);
+  font-weight: 800; font-size: 18px;
 }
 
 .brand-text h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
@@ -110,10 +90,8 @@ body {
 .clock-label { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
 
 .status-pill {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 14px; border-radius: 999px;
-  background: var(--surface); border: 1px solid var(--border);
-  font-size: 13px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--border); font-size: 13px; color: var(--text-muted);
 }
 
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); transition: background 0.3s ease; }
@@ -134,14 +112,14 @@ body {
 .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
 
 .stat-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-md); padding: 16px 18px;
-  display: flex; flex-direction: column; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;
 }
 
 .stat-label { font-size: 12px; color: var(--text-muted); }
 .stat-value { font-family: var(--font-mono); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stat-value.accent { color: var(--accent); }
+.stat-value.positive { color: var(--positive); }
 .stat-value.muted { color: var(--text-muted); font-size: 22px; }
 
 .countdown-card { position: relative; }
@@ -153,50 +131,86 @@ body {
   stroke-dasharray: 119.4; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear;
 }
 
-/* Table section */
-.table-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
-
-.table-header {
-  padding: 20px 22px 16px; border-bottom: 1px solid var(--border-soft);
-  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+/* Two-column panels */
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
 }
 
-.table-header h2 { margin: 0; font-size: 16px; font-weight: 700; }
-.table-sub { font-size: 12.5px; color: var(--text-muted); }
-
-.table-scroll { max-height: 62vh; overflow-y: auto; }
-
-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-
-thead th {
-  position: sticky; top: 0; background: var(--surface-2); color: var(--text-muted);
-  font-weight: 600; font-size: 12px; text-align: right; padding: 11px 14px;
-  border-bottom: 1px solid var(--border); white-space: nowrap; z-index: 5;
+.panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  overflow: hidden; display: flex; flex-direction: column;
 }
 
-th.col-rank { text-align: center; width: 40px; }
-th.col-num, td.col-num { text-align: left; }
-th.col-gap { text-align: left; }
+.panel-header {
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--border-soft);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
 
-tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
-tbody tr { transition: background 0.15s ease; }
-tbody tr:hover { background: var(--surface-2); }
+.panel-title-block { display: flex; flex-direction: column; gap: 3px; }
 
-td.col-rank { text-align: center; color: var(--text-faint); font-family: var(--font-mono); font-size: 12px; }
-td.col-symbol { font-weight: 700; color: var(--text-primary); }
-td.col-name { color: var(--text-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
-td.col-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: left; color: var(--text-primary); direction: ltr; }
-td.col-gap { font-family: var(--font-mono); direction: ltr; text-align: left; position: relative; }
+.panel-title { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
-.gap-cell { display: inline-flex; align-items: center; gap: 8px; min-width: 92px; }
-.gap-bar-track { width: 46px; height: 5px; border-radius: 4px; background: var(--border); overflow: hidden; }
-.gap-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--positive)); border-radius: 4px; }
-.gap-value { font-weight: 700; color: var(--positive); }
+.panel-badge {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+}
+
+.panel-badge.step1 { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); }
+.panel-badge.step2 { background: var(--positive-soft); color: var(--positive); border: 1px solid rgba(63,191,127,0.35); }
+
+.panel-sub { font-size: 12px; color: var(--text-muted); }
+
+.panel-count {
+  font-family: var(--font-mono); font-size: 20px; font-weight: 700;
+  padding: 4px 12px; border-radius: 999px; background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.panel.highlight .panel-count { color: var(--positive); }
+.panel:not(.highlight) .panel-count { color: var(--accent); }
+
+.list-scroll { max-height: 56vh; overflow-y: auto; }
+
+.symbol-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 20px; border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s ease;
+}
+
+.symbol-row:hover { background: var(--surface-2); }
+.symbol-row:last-child { border-bottom: none; }
+
+.row-rank {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint);
+  width: 22px; flex-shrink: 0; text-align: center;
+}
+
+.row-symbol { font-weight: 700; font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.row-gap {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+
+.row-gap-bar-track { width: 50px; height: 5px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.row-gap-bar-fill { height: 100%; border-radius: 4px; }
+.panel:not(.highlight) .row-gap-bar-fill { background: var(--accent); }
+.panel.highlight .row-gap-bar-fill { background: var(--positive); }
+
+.row-gap-value {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 13.5px; font-weight: 700; min-width: 58px; text-align: left; direction: ltr;
+}
+
+.panel:not(.highlight) .row-gap-value { color: var(--accent); }
+.panel.highlight .row-gap-value { color: var(--positive); }
 
 /* Empty state */
-.empty-state { padding: 60px 20px; text-align: center; color: var(--text-muted); }
-.empty-icon { display: block; font-size: 28px; color: var(--text-faint); margin-bottom: 10px; }
-.empty-state p { margin: 0; font-size: 13.5px; }
+.empty-state { padding: 46px 20px; text-align: center; color: var(--text-muted); }
+.empty-icon { display: block; font-size: 24px; color: var(--text-faint); margin-bottom: 8px; }
+.empty-state p { margin: 0; font-size: 13px; }
 
 /* Footer */
 .foot-note { margin-top: 20px; text-align: center; font-size: 11.5px; color: var(--text-faint); }
@@ -204,6 +218,7 @@ td.col-gap { font-family: var(--font-mono); direction: ltr; text-align: left; po
 /* Responsive */
 @media (max-width: 900px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .panels { grid-template-columns: 1fr; }
   .topbar { padding: 14px 18px; flex-wrap: wrap; gap: 12px; }
   .wrap { padding: 20px 16px 40px; }
 }
@@ -242,14 +257,10 @@ td.col-gap { font-family: var(--font-mono); direction: ltr; text-align: left; po
 
 <main class="wrap">
 
-  <section class="stats-row" id="statsRow">
+  <section class="stats-row">
     <div class="stat-card">
       <span class="stat-label">نمادهای بررسی‌شده</span>
       <span class="stat-value" id="statChecked">—</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">واجد هر دو شرط</span>
-      <span class="stat-value accent" id="statMatched">—</span>
     </div>
     <div class="stat-card">
       <span class="stat-label">حذف‌شده (نماد ۲/۳)</span>
@@ -258,6 +269,10 @@ td.col-gap { font-family: var(--font-mono); direction: ltr; text-align: left; po
     <div class="stat-card">
       <span class="stat-label">حذف‌شده (صندوق ETF)</span>
       <span class="stat-value muted" id="statEtf">—</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">واجد هر دو شرط</span>
+      <span class="stat-value positive" id="statBoth">—</span>
     </div>
     <div class="stat-card countdown-card">
       <span class="stat-label">به‌روزرسانی بعدی</span>
@@ -271,34 +286,38 @@ td.col-gap { font-family: var(--font-mono); direction: ltr; text-align: left; po
     </div>
   </section>
 
-  <section class="table-section">
-    <div class="table-header">
-      <h2>نمادهای واجد شرایط</h2>
-      <span class="table-sub">مرتب‌شده بر اساس بیشترین فاصله‌ی درصدی پایانی تا آخرین معامله</span>
+  <section class="panels">
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title-block">
+          <h2 class="panel-title"><span class="panel-badge step1">۱</span> فقط شرط اول</h2>
+          <span class="panel-sub">فاصله پایانی و آخرین معامله دیروز، حداقل ۰.۳٪</span>
+        </div>
+        <span class="panel-count" id="condition1Count">۰</span>
+      </div>
+      <div class="list-scroll" id="condition1List"></div>
+      <div class="empty-state" id="condition1Empty" hidden>
+        <span class="empty-icon">◌</span>
+        <p>فعلاً نمادی این شرط رو نداره.</p>
+      </div>
     </div>
 
-    <div class="table-scroll">
-      <table id="resultsTable">
-        <thead>
-          <tr>
-            <th class="col-rank">#</th>
-            <th class="col-symbol">نماد</th>
-            <th class="col-name">نام شرکت</th>
-            <th class="col-num">پایانی دیروز</th>
-            <th class="col-num">آخرین معامله دیروز</th>
-            <th class="col-num">فاصله (تومان)</th>
-            <th class="col-gap">فاصله درصدی</th>
-            <th class="col-num">po1 امروز</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
+    <div class="panel highlight">
+      <div class="panel-header">
+        <div class="panel-title-block">
+          <h2 class="panel-title"><span class="panel-badge step2">۲</span> هر دو شرط</h2>
+          <span class="panel-sub">شرط اول + صف فروش امروز زیر پایانی دیروز</span>
+        </div>
+        <span class="panel-count" id="bothCount">۰</span>
+      </div>
+      <div class="list-scroll" id="bothList"></div>
+      <div class="empty-state" id="bothEmpty" hidden>
+        <span class="empty-icon">◌</span>
+        <p>فعلاً نمادی هر دو شرط رو نداره.</p>
+      </div>
     </div>
 
-    <div class="empty-state" id="emptyState" hidden>
-      <span class="empty-icon">◌</span>
-      <p id="emptyMessage">هنوز نمادی که هر دو شرط رو داشته باشه پیدا نشده.</p>
-    </div>
   </section>
 
   <footer class="foot-note">
@@ -309,9 +328,7 @@ td.col-gap { font-family: var(--font-mono); direction: ltr; text-align: left; po
 
 <script>
 // این اسکریپت فقط دیتایی که app.py از /api/latest برمی‌گردونه رو
-// می‌گیره و نمایش می‌ده. هیچ محاسبه یا فیلتری اینجا انجام نمیشه - همه‌ی
-// منطق (شرط‌ها، فرمول درصد، مرتب‌سازی) سمت بک‌اند و عیناً طبق اسکریپت
-// preopening_check.py انجام شده.
+// می‌گیره و نمایش می‌ده. هیچ محاسبه یا فیلتری اینجا انجام نمیشه.
 
 const RING_CIRCUMFERENCE = 119.4; // 2 * PI * r(19)
 
@@ -323,15 +340,17 @@ const el = {
   statusPill: document.getElementById('statusPill'),
   statusText: document.getElementById('statusText'),
   statChecked: document.getElementById('statChecked'),
-  statMatched: document.getElementById('statMatched'),
   statDigit: document.getElementById('statDigit'),
   statEtf: document.getElementById('statEtf'),
+  statBoth: document.getElementById('statBoth'),
   statCountdown: document.getElementById('statCountdown'),
   ringFg: document.getElementById('ringFg'),
-  resultsBody: document.getElementById('resultsBody'),
-  emptyState: document.getElementById('emptyState'),
-  emptyMessage: document.getElementById('emptyMessage'),
-  table: document.getElementById('resultsTable'),
+  condition1List: document.getElementById('condition1List'),
+  condition1Count: document.getElementById('condition1Count'),
+  condition1Empty: document.getElementById('condition1Empty'),
+  bothList: document.getElementById('bothList'),
+  bothCount: document.getElementById('bothCount'),
+  bothEmpty: document.getElementById('bothEmpty'),
 };
 
 function formatFa(num, digits = 0) {
@@ -350,40 +369,35 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function renderRows(matches) {
-  el.resultsBody.innerHTML = '';
+function renderList(container, countEl, emptyEl, items) {
+  container.innerHTML = '';
+  countEl.textContent = formatFa(items ? items.length : 0);
 
-  if (!matches || matches.length === 0) {
-    el.table.style.display = 'none';
-    el.emptyState.hidden = false;
+  if (!items || items.length === 0) {
+    container.style.display = 'none';
+    emptyEl.hidden = false;
     return;
   }
 
-  el.table.style.display = '';
-  el.emptyState.hidden = true;
+  container.style.display = '';
+  emptyEl.hidden = true;
 
-  const maxGap = Math.max(...matches.map(m => m.price_gap_percent), 0.0001);
+  const maxGap = Math.max(...items.map(m => m.price_gap_percent), 0.0001);
 
-  matches.forEach((m, idx) => {
-    const tr = document.createElement('tr');
+  items.forEach((m, idx) => {
+    const row = document.createElement('div');
+    row.className = 'symbol-row';
     const barPct = Math.min(100, (m.price_gap_percent / maxGap) * 100);
 
-    tr.innerHTML = `
-      <td class="col-rank">${idx + 1}</td>
-      <td class="col-symbol">${escapeHtml(m.symbol)}</td>
-      <td class="col-name">${escapeHtml(m.name)}</td>
-      <td class="col-num">${formatFa(m.pc_yesterday)}</td>
-      <td class="col-num">${formatFa(m.pl_yesterday)}</td>
-      <td class="col-num">${formatFa(m.price_gap)}</td>
-      <td class="col-gap">
-        <span class="gap-cell">
-          <span class="gap-value">${formatFa(m.price_gap_percent, 2)}%</span>
-          <span class="gap-bar-track"><span class="gap-bar-fill" style="width:${barPct}%"></span></span>
-        </span>
-      </td>
-      <td class="col-num">${formatFa(m.po1_today)}</td>
+    row.innerHTML = `
+      <span class="row-rank">${idx + 1}</span>
+      <span class="row-symbol">${escapeHtml(m.symbol)}</span>
+      <span class="row-gap">
+        <span class="row-gap-bar-track"><span class="row-gap-bar-fill" style="width:${barPct}%"></span></span>
+        <span class="row-gap-value">${formatFa(m.price_gap_percent, 2)}%</span>
+      </span>
     `;
-    el.resultsBody.appendChild(tr);
+    container.appendChild(row);
   });
 }
 
@@ -414,17 +428,19 @@ async function fetchLatest() {
 
     if (data.stats) {
       el.statChecked.textContent = formatFa(data.stats.total_checked);
-      el.statMatched.textContent = formatFa(data.stats.matched_count);
       el.statDigit.textContent = formatFa(data.stats.excluded_digit_count);
       el.statEtf.textContent = formatFa(data.stats.excluded_etf_count);
+      el.statBoth.textContent = formatFa(data.stats.both_conditions_count);
     }
 
     if (data.status === 'no_yesterday_file') {
-      el.emptyMessage.textContent = data.error_message;
-      el.table.style.display = 'none';
-      el.emptyState.hidden = false;
-    } else if (data.matches) {
-      renderRows(data.matches);
+      renderList(el.condition1List, el.condition1Count, el.condition1Empty, []);
+      renderList(el.bothList, el.bothCount, el.bothEmpty, []);
+      el.condition1Empty.querySelector('p').textContent = data.error_message;
+      el.bothEmpty.querySelector('p').textContent = data.error_message;
+    } else {
+      renderList(el.condition1List, el.condition1Count, el.condition1Empty, data.condition1_list);
+      renderList(el.bothList, el.bothCount, el.bothEmpty, data.both_conditions_list);
     }
 
     if (data.last_update) {
